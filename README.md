@@ -10,6 +10,19 @@ Compatibilidade testada nas seguintes versões do Delphi: Seattle, Berlim, Tokyo
 
 ### Para contratação da licença do Corporate entre em contato no whatsApp:(81) 99630-2385<br>
 
+Instruções básicas para instalação:<br></br>
+
+1. Desinstale completamente o CEF e os arquivos .bpl na pasta da Embarcadero<br>
+2. Renomeie qualquer pasta de versões anteriores do CEF<br> 
+3. Desinstale completamente o Tinject Corporate<br>
+4. Renomeie qualquer pasta de versões anteriores do Tinject Corporate<br>
+5. Remova todos os diretorios antigos do CEF e do Tinject Corporate do Library path do seu Delphi<br>
+6. Incluir todos os diretorios da nova versão do CEF e do Tinject Corporate V2<br>
+7. Instale o CEF<br>
+8. Instale o Tinject Corporate V2<br>
+9. Extraia os arquivos binários(CEF4BIN_154.0.32.rar) para a basta BIN do demo<br>
+10. Coloque o seu serial(Token) na propriedade serialCorporate e rode e demo<br>
+
 ### Tutorial de instalação padão:<br>
 https://www.youtube.com/watch?v=EIxFdtenNxI&t=31s
 <br>
