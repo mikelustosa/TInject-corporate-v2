@@ -2532,6 +2532,7 @@ begin
        Abort;
     end else
       KillProcessByName(ExtractFilePath(Application.ExeName));
+      exit;
   end;
 
   try

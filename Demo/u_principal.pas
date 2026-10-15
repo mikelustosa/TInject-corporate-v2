@@ -211,6 +211,7 @@ type
     Panel14: TPanel;
     Image2: TImage;
     btMarkRead: TButton;
+    btSendTextButton: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btSendTextClick(Sender: TObject);
@@ -463,7 +464,7 @@ end;
 
 procedure TfrmPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  TInject1.ShutDown();
+  TInject1.ShutDown(true);
 end;
 
 Procedure TfrmPrincipal.AddChatList(ANumber: String);
@@ -672,15 +673,15 @@ var
   buttons, buttonType: TJSONObject;
   jsonArray: TJSONArray;
 begin
-  {Obsoleto
+
   try
     if not TInject1.Auth then
       Exit;
 
     buttons := TJSONObject.Create;
 
-    buttons.AddPair('useInteractiveMessage' , TJSONBool.Create(true));
-
+    buttons.AddPair('useTemplateButtons' , TJSONBool.Create(true));
+    buttons.AddPair('createChat' , TJSONBool.Create(true));
     jsonArray  := TJSONArray.Create;
 
     //ID button1
@@ -697,7 +698,7 @@ begin
 
     buttons.AddPair('buttons', jsonArray);
 
-    buttons.AddPair('footer' , 'Botões TInject Corporate');
+    buttons.AddPair('footer' , 'Botões TInject Corporate V2');
 
     TInject1.sendButtons(ed_num.Text, mem_message.Text, buttons.ToJSON);
 
@@ -709,7 +710,7 @@ begin
       if assigned(buttons) then
         buttons.Free;
     end;
-  end; }
+  end;
 
 end;
 

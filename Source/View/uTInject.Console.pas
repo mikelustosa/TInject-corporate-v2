@@ -343,9 +343,9 @@ end;
 
 procedure TFrmConsole.WMMove(var aMessage : TWMMove);
 begin
-//  inherited;
-//  if (Chromium1 <> nil) then
-//     Chromium1.NotifyMoveOrResizeStarted;
+  inherited;
+  if (Chromium1 <> nil) then
+     Chromium1.NotifyMoveOrResizeStarted;
 
 // Mike 01/10/2026
 //  inherited;
@@ -363,17 +363,17 @@ end;
 procedure TFrmConsole.WMMoving(var aMessage : TMessage);
 begin
 // Mike 01/10/2026
-//  inherited;
-//  if (Chromium1 <> nil) then
-//     Chromium1.NotifyMoveOrResizeStarted;
+  inherited;
+  if (Chromium1 <> nil) then
+     Chromium1.NotifyMoveOrResizeStarted;
 end;
 
 procedure TFrmConsole.WMSysCommand(var Message: TWMSysCommand);
 begin
 // Mike 01/10/2026
-//  if(Message.CmdType = SC_MINIMIZE)then
-//    Hide else
-//    inherited;
+  if(Message.CmdType = SC_MINIMIZE)then
+    Hide else
+    inherited;
 end;
 
 procedure TFrmConsole.ExecuteJS(PScript: WideString;  PDirect:  Boolean; Purl:String; pStartline: integer);
