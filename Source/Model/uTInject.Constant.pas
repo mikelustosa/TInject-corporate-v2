@@ -33,7 +33,7 @@ Uses Winapi.Messages, System.SysUtils, typinfo, REST.Json;
 Const
   //Uso GLOBAL
   //Version updates I=HIGH, II=MEDIUM, III=LOW, IV=VERY LOW
-  TInjectVersion                  = '5.8.1.0';
+  TInjectVersion                  = '5.8.2.0';
   CardContact                     = '@c.us';
   CardGroup                       = '@g.us';
   CardList                        = '@broadcast';
@@ -70,9 +70,19 @@ Const
   FrmConsole_JS_GetAllChats             = 'window.WAPI.getAllChats();';
   FrmConsole_JS_checkDelivered          = 'window.WAPI.getDelivered();';
   FrmConsole_JS_WEBmonitorQRCode        = 'var AQrCode = document.getElementsByTagName("canvas")[0].toDataURL("image/png");console.log(JSON.stringify({"name":"getQrCodeWEB","result":{AQrCode}}));';
-  FrmConsole_JS_refreshOnlyQRCode       = 'let interval = window.setInterval(() => { try {if (sessaoFinalizadaPeloCelular == true){ SetConsoleMessage("OnChangeConnect", JSON.stringify(false))}; const allButtons = document.querySelectorAll("button"); for (const button of allButtons) '+
+  FrmConsole_JS_refreshOnlyQRCode       = 'if (!window.__mtsRefreshQR) { window.__mtsRefreshQR = window.setInterval(() => { try {if (document.querySelector("#pane-side") && !document.querySelector("canvas, [data-ref]")) '+
+                                          '{ window.__mtsLogado = (window.__mtsLogado || 0) + 1; if (window.__mtsLogado >= 2) { console.log(JSON.stringify({"name":"OnChangeConnect","result":"{\"result\":true}"})); } } else '+
+                                          '{ window.__mtsLogado = 0; }; if ((typeof sessaoFinalizadaPeloCelular !== "undefined") && (sessaoFinalizadaPeloCelular == true)){ SetConsoleMessage("OnChangeConnect", JSON.stringify(false))}; '+
+                                          'const allButtons = document.querySelectorAll("button, [role=button]"); for (const button of allButtons) '+ // [MELHORIA] (23/10/2026): o script agora e' criado uma vez so' (window.__mtsRefreshQR), nao da erro quando a variavel sessaoFinalizadaPeloCelular nao existe, acha tambem botoes feitos com role=button, continua vigiando depois do primeiro clique e verifica a cada 10 s (antes 30 s)
                                           '{ const buttonText = button.textContent.trim().toUpperCase(); '+
-                                          'if ((buttonText.includes("RECARREGAR")) || (buttonText.includes("RELOAD"))) { button.click(); clearInterval(interval); break; } } } catch (error) { console.error(error); }}, 30000);';
+                                          'if ((buttonText.includes("RECARREGAR")) || (buttonText.includes("RELOAD"))) { button.click(); break; } } } catch (error) { console.error(error); }}, 10000); }';
+
+  // [MELHORIA] (26/10/2026): o refreshOnlyQRCode tambem avisa (OnChangeConnect = true) quando a lista de conversas
+  // (#pane-side) aparece SEM QR code na tela (canvas / [data-ref]) em duas verificacoes seguidas (20 s), ou seja,
+  // a conta entrou. (26/10/2026, 2a versao: com "#pane-side, #side" e sem conferir o QR o aviso saia ainda na tela
+  // do QR, o componente parava de atualizar o QR e o celular recusava o QR vencido.) A conexao era deduzida so' pela contagem de trocas
+  // do titulo da pagina (TFrmConsole.Chromium1TitleChange) e, quando o titulo nao mudava o bastante depois de
+  // ler o QR, o celular mostrava o aparelho conectado e o componente ficava esperando para sempre.
 
   FrmConsole_JS_refreshErrorPage        = 'let intervalErroPage = window.setInterval(() => { try { const allButtons = document.querySelectorAll("button"); for (const button of allButtons) { const buttonText = button.textContent.trim().toUpperCase(); '+
                                           'if ((buttonText.includes("RELOAD")) || (buttonText.includes("RECARREGAR"))) { button.click(); break; } } } catch (error) { console.error(error); }}, 30000);';

@@ -920,15 +920,11 @@ Begin
             LTmp:= '[' + FormatDateTime('dd/mm/yy hh:nn:ss', now) + ' - ' + PCab + ']  ' + slinebreak Else
             LTmp:= '[' + FormatDateTime('dd/mm/yy hh:nn:ss', now) + ' - ' + PCab + ']  ' + slinebreak;
 
-      if PCab= 'CONSOLE'  then
-//        if ( pos(wideString('@g.us'), Pvalor) > 0 ) or ( pos(wideString('getDelivered'), Pvalor) > 0 )  then
-//        begin
-//          exit;
-//        end else
-          begin
-            TFile.AppendAllText(LName, slinebreak, TEncoding.ASCII);
-            TFile.AppendAllText(LName, slinebreak + LTmp + Pvalor, TEncoding.ASCII);
-          end;
+      // [MELHORIA] (23/10/2026): antes so' gravava as linhas do tipo 'CONSOLE'. Os erros da pagina
+      // ('CONSOLE IGNORADO'), o titulo e o fim do carregamento eram jogados fora, e sem eles
+      // nao da para descobrir por que o QR code nao aparece. Agora grava tudo.
+      TFile.AppendAllText(LName, slinebreak, TEncoding.ASCII);
+      TFile.AppendAllText(LName, slinebreak + LTmp + Pvalor, TEncoding.ASCII);
     End;
   Except
 
@@ -1494,8 +1490,8 @@ begin
         if FShowException then
         Begin
           if pos(AnsiUpperCase('Cold not load SSL'), AnsiUpperCase(e.Message)) > 0 then
-             Application.MessageBox(PWideChar(MSG_Exceptlibeay32dll), PWideChar(Application.Title), MB_ICONERROR + mb_ok) else
-             Application.MessageBox(Pwidechar('Erro HTTP GET (js.abr) ' + e.Message), PWideChar(Application.Title), MB_ICONWARNING + mb_ok);
+             raise Exception.Create(MSG_Exceptlibeay32dll) else // [MELHORIA] antes era MessageBox. Rodando como servico ninguem ve a janela e o programa trava esperando o OK; com a excecao o erro vai para o log
+             raise Exception.Create('Erro HTTP GET (js.abr) ' + e.Message);
         End;
       End;
     end;

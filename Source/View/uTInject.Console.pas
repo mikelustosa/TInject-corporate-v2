@@ -81,7 +81,7 @@ type
       const title: ustring);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure Chromium1ConsoleMessage(Sender: TObject;   const browser: ICefBrowser; level: Cardinal; const message,
+    procedure Chromium1ConsoleMessage(Sender: TObject;   const browser: ICefBrowser; level: TCefLogSeverity; const message, // [MELHORIA] (23/10/2026): antes era "level: Cardinal". No CEF4Delphi 154 o evento mudou de tipo e sem esta troca o componente nao compila
       source: ustring; line: Integer; out Result: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -1734,6 +1734,23 @@ begin
                                 FOnNotificationCenter(Th_ForceDisconnect, '');
                                 Exit;
                               End;
+
+                              // [MELHORIA] (26/10/2026): aviso de login do refreshOnlyQRCode (lista de conversas na tela).
+                              // So' age enquanto o componente ainda espera a conexao (QR ou conectando): faz o mesmo que a
+                              // contagem de titulos em Chromium1TitleChange, que falhava quando o titulo nao mudava o bastante.
+                              // [MELHORIA] (26/10/2026): roda na thread principal (TThread.Queue). Este evento chega na
+                              // thread do Chromium; avisar a conexao dali (OnConnected do programa, ProcessMessages) e
+                              // trocar a borda da janela que hospeda o navegador (Form_Normal recria a janela) derrubava
+                              // o processo em servico logo depois de ler o QR. So' o necessario: log, LPaginaId e Th_Connected.
+                              TThread.Queue(nil, procedure
+                              begin
+                                if Assigned(FOwner) and (TInject(FOwner).Status in [Server_Connecting, Server_ConnectingNoPhone, Server_ConnectingReaderCode]) then
+                                Begin
+                                  LogAdd('Conta conectada detectada pela tela (lista de conversas) - avisando conexao', 'CONEXAO');
+                                  LPaginaId := 20;
+                                  SendNotificationCenterDirect(Th_Connected);
+                                End;
+                              end);
                             end;
 
 
@@ -1841,7 +1858,7 @@ begin
 end;
 
 procedure TFrmConsole.Chromium1ConsoleMessage(Sender: TObject;
-  const browser: ICefBrowser; level: Cardinal; const message, source: ustring;
+  const browser: ICefBrowser; level: TCefLogSeverity; const message, source: ustring; // [MELHORIA] (23/10/2026): antes era "level: Cardinal" (mesma troca feita na declaracao do evento)
   line: Integer; out Result: Boolean);
 var
   AResponse  : TResponseConsoleMessage;
@@ -1918,6 +1935,10 @@ procedure TFrmConsole.Chromium1LoadEnd(Sender: TObject;
 var
   Script: string;
 begin
+  // [MELHORIA] (23/10/2026): grava no log quando a pagina termina de carregar (ajuda a descobrir por que o QR code nao aparece)
+  if (frame <> nil) and (frame.IsMain) then
+    LogAdd(frame.Url + ' http=' + IntToStr(httpStatusCode), 'LOADEND');
+
   if (httpStatusCode = 200) and (frame <> nil) and (frame.IsMain) then
   begin
     // Tenta forçar uma atualização do componente
@@ -1962,12 +1983,25 @@ end;
 procedure TFrmConsole.CriarBatReiniciarExe(const CaminhoBat, NomeExe, CaminhoExe: string);
 var
   SL: TStringList;
+  LSessao: DWORD;
 begin
   try
+    // [MELHORIA] (25/10/2026): rodando como servico do Windows (sessao 0) nao cria o .bat. So' encerra
+    // este programa e o gerenciador de servicos (ex.: NSSM) sobe ele de novo. O "start" do .bat
+    // abriria uma segunda copia fora do servico, usando a mesma pasta de cache.
+    if ProcessIdToSessionId(GetCurrentProcessId, LSessao) and (LSessao = 0) then
+    begin
+      geraLog('Reinicio de seguranca: encerrando o processo para o servico reiniciar.');
+      TerminateProcess(GetCurrentProcess, 1);
+      Exit;
+    end;
+
     SL := TStringList.Create;
     try
       SL.Add('@echo off');
-      SL.Add('taskkill /F /IM "' + NomeExe + '"');
+      // [MELHORIA] (25/10/2026): fecha so' este processo (pelo numero dele, PID). Pelo nome (/IM)
+      // fechava todas as copias do mesmo exe no computador, de todos os numeros de WhatsApp.
+      SL.Add('taskkill /F /PID ' + IntToStr(GetCurrentProcessId));
       SL.Add('timeout /t 5 /nobreak');
       SL.Add('start "" "' + CaminhoExe + '"');
       SL.SaveToFile(CaminhoBat, TEncoding.ANSI);
@@ -2028,12 +2062,20 @@ procedure TFrmConsole.Chromium1TitleChange(Sender: TObject;
   const browser: ICefBrowser; const title: ustring);
 begin
   LPaginaId := LPaginaId + 1;
-  if (LPaginaId > 3) and (LPaginaId < 10) then
-  begin
-    Form_Normal;
-    If Assigned(OnNotificationCenter) then
-       SendNotificationCenterDirect(Th_Connected);
-  end;
+  // [MELHORIA] (23/10/2026): grava no log cada troca de titulo da pagina (ajuda a descobrir por que o QR code nao aparece)
+  LogAdd(title + ' (LPaginaId=' + IntToStr(LPaginaId) + ')', 'TITULO');
+  // [MELHORIA] (26/10/2026): a contagem de titulos NAO decide mais a conexao. Ela falhava nos dois
+  // sentidos: depois de ler o QR o titulo podia nao mudar o bastante (o celular conectava e o componente
+  // nao percebia) e, na tela do QR, cada QR vencido recarregado muda o titulo e a contagem chegava a 4
+  // sem conta nenhuma (o componente parava de capturar o QR e o celular recusava o QR mostrado).
+  // Quem avisa a conexao agora e' o FrmConsole_JS_refreshOnlyQRCode (lista de conversas na tela e
+  // nenhum QR, duas vezes seguidas), tratado em Th_OnChangeConnect.
+  //if (LPaginaId > 3) and (LPaginaId < 10) then
+  //begin
+  //  Form_Normal;
+  //  If Assigned(OnNotificationCenter) then
+  //     SendNotificationCenterDirect(Th_Connected);
+  //end;
   if (LPaginaId <= 3) and (FFormType = Ft_Http) then
     SetZoom(-2);
 
@@ -2152,9 +2194,26 @@ begin
       raise Exception.Create(MSG_ConfigCEF_ExceptBrowse);
     end else
     begin
-      //Chromium1.OnConsoleMessage        := Chromium1ConsoleMessage;
+      // [MELHORIA] (23/10/2026): na v2 esta linha estava comentada. Quando a conexao cai, o componente
+      // desliga este evento, e e' por ele que chegam o QR code e todas as respostas do WhatsApp.
+      // Sem religar o evento aqui, ao reconectar o QR code nunca mais aparece (chegava vazio).
+      // Por isso a linha voltou a ser executada.
+      Chromium1.OnConsoleMessage        := Chromium1ConsoleMessage;
       Chromium1.OnOpenUrlFromTab        := Chromium1OpenUrlFromTab;
       Chromium1.OnTitleChange           := Chromium1TitleChange;
+
+      // [MELHORIA] (23/10/2026): o cache que o WhatsApp Web deixa de uma execucao anterior fazia a
+      // pagina travar antes de mostrar o QR code (so' voltava a funcionar apagando a pasta de cache).
+      // Agora, sempre que o navegador e' criado, apagamos so' esse cache e depois abrimos o WhatsApp.
+      // O login nao se perde, porque ele fica guardado em outro lugar que nao e' apagado.
+      // LPaginaId volta a zero para que a pagina em branco nao entre na contagem de titulos que
+      // indica "conectado" (titulos 4 a 9).
+      Chromium1.ClearDataForOrigin('https://web.whatsapp.com', cdstServiceWorkers);
+      Chromium1.ClearDataForOrigin('https://web.whatsapp.com', cdstCacheStorage);
+      Chromium1.ClearCache;
+      SleepNoFreeze(1000);
+      LPaginaId := 0;
+      Chromium1.LoadURL(FrmConsole_JS_URL);
     end;
   end;
 end;
@@ -2209,7 +2268,9 @@ begin
 
 
   GlobalCEFApp.Chromium     := Chromium1;
-  Chromium1.DefaultURL      := FrmConsole_JS_URL;
+  // [MELHORIA] (23/10/2026): o navegador abre numa pagina em branco. O WhatsApp so' e' aberto
+  // depois de apagar o cache dele (ver TFrmConsole.Connect)
+  Chromium1.DefaultURL      := 'about:blank';
   FTimerMonitoring          := TTimer.Create(nil);
   FTimerMonitoring.Interval := 1000 * 10;  //10 segundos..
   FTimerMonitoring.Enabled  := False;

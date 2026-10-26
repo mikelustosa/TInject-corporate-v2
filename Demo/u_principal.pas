@@ -212,6 +212,7 @@ type
     Image2: TImage;
     btMarkRead: TButton;
     btSendTextButton: TButton;
+    btSendTextButton2: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btSendTextClick(Sender: TObject);
@@ -331,6 +332,7 @@ type
     procedure TInject1GetLid(const Contact: TGetLidClass);
     procedure FormDestroy(Sender: TObject);
     procedure btMarkReadClick(Sender: TObject);
+    procedure btSendTextButton2Click(Sender: TObject);
 
   private
     { Private declarations }
@@ -668,6 +670,52 @@ Begin
   end;
 end;
 
+procedure TfrmPrincipal.btSendTextButton2Click(Sender: TObject);
+var
+  buttons, buttonType: TJSONObject;
+  jsonArray: TJSONArray;
+begin
+
+  try
+    if not TInject1.Auth then
+      Exit;
+
+    buttons := TJSONObject.Create;
+
+    buttons.AddPair('useInteractiveMessage' , TJSONBool.Create(true));
+    buttons.AddPair('createChat' , TJSONBool.Create(true));
+    jsonArray  := TJSONArray.Create;
+
+    //ID button1
+    buttonType := TJSONObject.Create;
+    buttonType.AddPair('id' , '1');
+    buttonType.AddPair('text' , 'Suporte');
+    jsonArray.AddElement(buttonType);
+
+    //ID button2
+    buttonType := TJSONObject.Create;
+    buttonType.AddPair('id' , '2');
+    buttonType.AddPair('text' , 'Comercial');
+    jsonArray.AddElement(buttonType);
+
+    buttons.AddPair('buttons', jsonArray);
+
+    buttons.AddPair('footer' , 'Envio de Botões TInject Corporate V2');
+
+    TInject1.sendButtons(ed_num.Text, mem_message.Text, buttons.ToJSON);
+
+  finally
+    begin
+      ed_num.SelectAll;
+      ed_num.SetFocus;
+
+      if assigned(buttons) then
+        buttons.Free;
+    end;
+  end;
+
+end;
+
 procedure TfrmPrincipal.btSendTextButtonClick(Sender: TObject);
 var
   buttons, buttonType: TJSONObject;
@@ -680,25 +728,18 @@ begin
 
     buttons := TJSONObject.Create;
 
-    buttons.AddPair('useTemplateButtons' , TJSONBool.Create(true));
+    buttons.AddPair('useInteractiveMessage' , TJSONBool.Create(true));
     buttons.AddPair('createChat' , TJSONBool.Create(true));
     jsonArray  := TJSONArray.Create;
 
-    //ID button1
     buttonType := TJSONObject.Create;
-    buttonType.AddPair('id' , '1');
-    buttonType.AddPair('text' , '👍 Suporte');
-    jsonArray.AddElement(buttonType);
-
-    //ID button2
-    buttonType := TJSONObject.Create;
-    buttonType.AddPair('id' , '2');
-    buttonType.AddPair('text' , '👨🏻‍💻Comercial');
+    buttonType.AddPair('url' , 'https://wa.me/558196302385');
+    buttonType.AddPair('text' , 'Quero desconto!');
     jsonArray.AddElement(buttonType);
 
     buttons.AddPair('buttons', jsonArray);
 
-    buttons.AddPair('footer' , 'Botões TInject Corporate V2');
+    buttons.AddPair('footer' , 'Envio de Botões TInject Corporate V2');
 
     TInject1.sendButtons(ed_num.Text, mem_message.Text, buttons.ToJSON);
 

@@ -392,9 +392,8 @@ begin
     LVReque   := IntToStr(VersaoMinima_CF4_Major)      + '.' + IntToStr(VersaoMinima_CF4_Minor)      + '.' + IntToStr(VersaoMinima_CF4_Release);
     LVerIdent := IntToStr(CEF_SUPPORTED_VERSION_MAJOR) + '.' + IntToStr(CEF_SUPPORTED_VERSION_MINOR) + '.' + IntToStr(CEF_SUPPORTED_VERSION_BUILD);
 
-    Application.MessageBox(PWideChar(Format(MSG_ConfigCEF_ExceptVersaoErrada, [LVReque, LVerIdent])),
-                           PWideChar(Application.Title), MB_ICONERROR + mb_ok
-                          );
+    // [MELHORIA] antes era MessageBox. Rodando como servico ninguem ve a janela e o programa trava esperando o OK; com a excecao o erro vai para o log
+    raise Exception.Create(Format(MSG_ConfigCEF_ExceptVersaoErrada, [LVReque, LVerIdent]));
     result := False;
     Exit;
   End;
@@ -458,8 +457,7 @@ begin
     End;
   finally
     Result  := (Self.status = asInitialized);
-    if not Result then
-       Application.MessageBox(PWideChar(MSG_ConfigCEF_ExceptConnection), PWideChar(Application.Title), MB_ICONERROR + mb_ok);
+    // [MELHORIA] MessageBox removida (rodando como servico ela trava o programa). Quem chama ja' recebe Result = False e trata o erro
   end;
 end;
 

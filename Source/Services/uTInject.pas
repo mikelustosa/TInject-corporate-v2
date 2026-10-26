@@ -1114,6 +1114,16 @@ var
   status: string;
   body  : string;
 begin
+  // [MELHORIA] (23/10/2026): Th_Destroy chega quando a janela do console e' destruida.
+  // Na v2 a janela passou a ser fechada e liberada a cada desconexao, mas a variavel
+  // FrmConsole continuava apontando para ela (so' o TInject.Disconnect a zerava).
+  // Resultado: o componente achava que o console ainda existia, nunca criava um novo
+  // (o QR code nao voltava mais) e usava um objeto ja' liberado (Access Violation a
+  // cada minuto). Zerar a variavel aqui resolve os dois problemas.
+  // Atencao: so' zerar (FrmConsole := nil). Nao dar Free: o objeto ja' foi liberado.
+  if PTypeHeader = Th_Destroy then
+    FrmConsole := nil;
+
   {###########################  ###########################}
   if (PTypeHeader In [Th_AlterConfig]) then
   Begin
@@ -2483,6 +2493,13 @@ procedure TInject.OnDestroyConsole(Sender: TObject);
 begin
   FDestroyTmr.Enabled := False;
   try
+    // [MELHORIA] ATENCAO: NAO trocar por FreeAndNil. Ja' testamos (01/08/2026) e em producao
+    // deu erro de liberar o mesmo objeto duas vezes (EDoubleFreeError).
+    // Quando este codigo roda, a janela FrmConsole ja' foi liberada: o TInject.Disconnect
+    // pede para fechar a janela, e o FormClose dela usa Action := caFree, que libera o
+    // objeto. Aqui so' falta limpar a variavel, que ainda aponta para um objeto que nao
+    // existe mais.
+    // Por isso apenas FrmConsole := Nil.
     if Assigned  (FrmConsole) then
        FrmConsole := Nil;
   except

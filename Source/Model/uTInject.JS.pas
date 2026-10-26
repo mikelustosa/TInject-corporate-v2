@@ -287,7 +287,7 @@ begin
       if Assigned(GlobalCEFApp) then
          GlobalCEFApp.SetError;
       if Assigned(FOnErrorInternal) then
-         Application.MessageBox(PWideChar(MSG_ExceptConfigVersaoCompInvalida), PWideChar(Application.Title), MB_ICONERROR + mb_ok);
+         raise Exception.Create(MSG_ExceptConfigVersaoCompInvalida); // [MELHORIA] antes era MessageBox. Rodando como servico ninguem ve a janela e o programa trava esperando o OK; com a excecao o erro vai para o log
       exit;
     End;
 
@@ -298,7 +298,7 @@ begin
          GlobalCEFApp.SetError;
 
       if Assigned(FOnErrorInternal) then
-         Application.MessageBox(PWideChar(MSG_ConfigCEF_ExceptVersaoErrada), PWideChar(Application.Title), MB_ICONERROR + mb_ok);
+         raise Exception.Create(MSG_ConfigCEF_ExceptVersaoErrada); // [MELHORIA] antes era MessageBox. Rodando como servico ninguem ve a janela e o programa trava esperando o OK; com a excecao o erro vai para o log
       exit;
     End;
 

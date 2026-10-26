@@ -192,6 +192,7 @@ End;
 
 function CaractersWeb(vText: string): string;
 begin
+  vText  := StringReplace(vText, '\'       ,'\\'  , [rfReplaceAll] ); // [MELHORIA] (05/08/2026): troca cada barra invertida por duas, ANTES das outras trocas. O texto vai dentro de um comando JavaScript; sem isso, uma barra invertida no texto quebra o comando e a mensagem nao e' enviada (sem nenhum aviso de erro)
   vText  := StringReplace(vText, sLineBreak,'\n' , [rfReplaceAll] );
   vText  := StringReplace(vText, #13       ,''   , [rfReplaceAll] );
   vText  := StringReplace(vText, '"'       ,'\"' , [rfReplaceAll] );
